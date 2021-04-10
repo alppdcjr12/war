@@ -48,8 +48,6 @@ class War
             @players.each do |player|
                 player.reset_down_cards if player.down_cards.empty?
                 player.play_card
-
-                puts "Player #{player.id} played #{player.up_card.display_value}."
             end
             #####
             if @players.length == 1
@@ -117,7 +115,7 @@ class War
                     #####
                     
                     # divide up the winnings in the case of a tie
-                    if is_final_tie?(winners)
+                    if winners.length > 1 && is_final_tie?(winners)
                         puts "Final tie - winners have no more cards left with which to battle."
                         @players.each do |player|
                             if !winners.include?(player)
@@ -146,10 +144,8 @@ class War
                         p "Tie with more cards remaining"
                         winners.each do |w|
                             w.reset_down_cards
+                            w.display_player_info
                         end
-                        #####
-                        player.display_player_info
-                        #####
                     elsif winners.length == 1
                         #####
                         puts "The highest value of these cards is #{max.up_card.point_value}."
