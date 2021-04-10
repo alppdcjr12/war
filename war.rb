@@ -41,9 +41,13 @@ class War
     def play
         while true
 
-            #####
             winning_players = @players.select { |p| p if !p.lost? }
             @players = winning_players
+
+            #####
+            players_string = @players.map{ |p| p.id.to_s }.join(", ")
+            puts "Players left in game: #{players_string}"
+            #####
 
             @players.each do |player|
                 player.reset_down_cards if player.down_cards.empty?
@@ -62,6 +66,14 @@ class War
             # PRINT
             max = @players.max_by { |player| player.up_card.point_value }
             
+            #####
+            @players.each do |p|
+                if p.up_card != nil
+                    puts "Player #{p.id} played #{p.up_card.point_value}."
+                end
+            end
+            #####
+
             #####
             puts "The highest point value is #{max.up_card.point_value}."
             #####
@@ -137,7 +149,7 @@ class War
                         end
                         winners = []
                         break
-                    elsif tie_at_end_of_round?(winners) and winners.length > 1
+                    elsif tie_at_end_of_round?(winners) && winners.length > 1
                         #####
                         puts "The highest value of these cards is #{max.up_card.point_value}."
                         #####
