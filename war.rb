@@ -140,7 +140,7 @@ class War
                                 player.tie_battle
                             end
                             #####
-                            player.display_player_info
+                            player.
                             #####
                         end
                         won_cards.shuffle
