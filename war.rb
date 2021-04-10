@@ -101,13 +101,16 @@ class War
                 won_cards = []
                 while winners.length > 1
                     losers = []
-                    winners.each do |player|
-                        if !player.can_battle?
-                            losers << player
-                        else
-                            player.battle_cards
+                    if !winners.all? { |w| !w.can_battle? }
+                        winners.each do |player|
+                            if !player.can_battle?
+                                losers << player
+                            else
+                                player.battle_cards
+                            end
                         end
                     end
+
                     winners.keep_if { |winner| !losers.include?(winner) }
 
                     #####
@@ -118,7 +121,6 @@ class War
 
                     max = winners.max_by { |player| player.up_card.point_value }
 
-                    
                     winners = winners.select { |player| player.up_card.point_value == max.up_card.point_value }
                     
                     winners_string = winners.map{ |w| w.id.to_s }.join(", ")
@@ -142,9 +144,9 @@ class War
                             #####
                         end
                         won_cards.shuffle
-                        while won_cards.length > 0
+                        if won_cards.length > 0
                             winners.shuffle.each do |w|
-                                w.win_battle([won_cards.pop])
+                                w.win_battle([won_cards.pop]) if won_cards.pop != nil
                             end
                         end
                         winners = []
