@@ -52,7 +52,14 @@ class War
                 puts "Player #{player.id} played #{player.up_card.display_value}."
             end
             #####
-            break if @players.length < 2
+            if @players.length == 1
+                break
+            elsif @players.length == 0
+                @players.each do |p|
+                    p.tie_battle
+                end
+                next
+            end
 
             # PRINT
             max = @players.max_by { |player| player.up_card.point_value }
