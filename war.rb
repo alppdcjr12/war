@@ -27,6 +27,12 @@ class War
         @players.keep_if { |player| player.id != id }
     end
 
+    def is_final_tie?(players)
+        players.all? do |p|
+            !p.unplayed_cards_remaining?
+        end
+    end
+
     def play
         while true
             @players.each do |player|
@@ -80,6 +86,27 @@ class War
                     winners = winners.select { |player| player.up_card.point_value == max.up_card.point_value }
                     winner_cards = winners.map { |w| "Player #{w.id}: #{w.up_card.point_value}" }
                     p "Cards after removing losers: #{winner_cards} }"
+
+                    # divide up the winnings in the case of a tie and
+                    if is_final_tie?(winners)
+                        won_cards = []
+                        @players.each do |player|
+                            if !winners.include?(player)
+                                player.give_up_cards.each do |card|
+                                    won_cards << card
+                                end
+                            end
+                        end
+                        while won_cards.length > 0
+                            winners.shuffle.each do |w|
+                                w.win_battle([won_cards.pop])
+                            end
+                        end
+                        winners.each do |w|
+                            w.reset_down_cards
+                        end
+                        winners = []
+                    end
                 end
                 won_cards = []
                 @players.each do |player|
