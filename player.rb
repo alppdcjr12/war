@@ -11,6 +11,15 @@ class Player
         @pow_cards = []
     end
 
+    def display_player_info
+        if @up_card != nil
+            up_card_display = @up_card.display_value
+        else
+            up_card_display = "none"
+        end
+        puts "Player #{@id} now has #{@down_cards.length} down cards, #{@up_card_display} in play, #{@winnings.length} in winnings, and #{@pow_cards.length} cards in pow."
+    end
+
     def play_card
         @up_card = @down_cards.pop
     end
@@ -51,6 +60,16 @@ class Player
     def win_battle(cards)
         @winnings += cards
         @winnings += @pow_cards
+        @winnings << @up_card if @up_card != nil
+        @pow_cards = []
+        @up_card = nil
+    end
+
+    def tie_battle
+        @winnings += @pow_cards
+        @winnings << @up_card if @up_card != nil
+        @pow_cards = []
+        @up_card = nil
     end
 
     def battle_cards
