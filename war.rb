@@ -23,10 +23,6 @@ class War
         end
     end
 
-    def remove_player(id)
-        @players.keep_if { |player| player.id != id }
-    end
-
     def tie_at_end_of_round?(players)
         players.all? do |p|
             !p.unplayed_cards_remaining?
@@ -34,19 +30,25 @@ class War
     end
 
     def is_final_tie?(players)
-        max_value = players.max_by { |p| p.up_card.point_value }.up_card.point_value
-        players.all? { |p| p.up_card.point_value == max_value && !p.unplayed_cards_remaining? }
+        if !players.empty?
+            max_value = players.max_by { |p| p.up_card.point_value }.up_card.point_value
+            players.all? { |p| p.up_card.point_value == max_value && !p.unplayed_cards_remaining? }
+        else
+            false
+        end
     end
 
     def play
         while true
 
             #####
+            winning_players = @players.select { |p| p if !p.lost? }
+            @players = winning_players
+
             @players.each do |player|
-                self.remove_player(player.id) if player.lost?
                 player.reset_down_cards if player.down_cards.empty?
                 player.play_card
-                
+
                 puts "Player #{player.id} played #{player.up_card.display_value}."
             end
             #####
@@ -63,7 +65,7 @@ class War
 
             #####
             winners_string = winners.map { |w| "#{w.id.to_s}" }.join(", ")
-            puts "Winners with that max value: #{winners_string}"
+            puts "Winner IDs with that max value: #{winners_string}"
             #####
 
             if winners.length == 1
@@ -99,17 +101,14 @@ class War
 
                     max = winners.max_by { |player| player.up_card.point_value }
 
-                    #####
-                    puts "The highest value of these cards is #{max.up_card.point_value}."
-                    #####
                     
                     winners = winners.select { |player| player.up_card.point_value == max.up_card.point_value }
                     
                     winners_string = winners.map{ |w| w.id.to_s }.join(", ")
                     #####
-                    puts "Winners after this war: #{winners_string}."
+                    puts "Winner IDs after this war: #{winners_string}."
                     #####
-
+                    
                     # divide up the winnings in the case of a tie
                     if is_final_tie?(winners)
                         puts "Final tie - winners have no more cards left with which to battle."
@@ -125,6 +124,7 @@ class War
                             player.display_player_info
                             #####
                         end
+                        won_cards.shuffle
                         while won_cards.length > 0
                             winners.shuffle.each do |w|
                                 w.win_battle([won_cards.pop])
@@ -133,6 +133,9 @@ class War
                         winners = []
                         break
                     elsif tie_at_end_of_round?(winners) and winners.length > 1
+                        #####
+                        puts "The highest value of these cards is #{max.up_card.point_value}."
+                        #####
                         p "Tie with more cards remaining"
                         winners.each do |w|
                             w.reset_down_cards
@@ -141,6 +144,9 @@ class War
                         player.display_player_info
                         #####
                     elsif winners.length == 1
+                        #####
+                        puts "The highest value of these cards is #{max.up_card.point_value}."
+                        #####
                         puts "There is a single winner of the round."
                         @players.each do |player|
                             if !winners.include?(player)
@@ -158,13 +164,15 @@ class War
                     end
                 end
             end
-            puts
 
         end
-        puts "Player #{@players[0].id} wins!"
+        winner = @players[0]
+        all_cards = winner.down_cards.length + winner.pow_cards.length + winner.winnings.length
+        all_cards += 1 if winner.up_card != nil
+        puts "Player #{@players[0].id} wins with #{all_cards}!"
     end
 
 end
 
-war = War.new(2)
+war = War.new(34)
 war.play
