@@ -50,6 +50,7 @@ class Player
 
     def win_battle(cards)
         @winnings += cards
+        @winnings += @pow_cards
     end
 
     def battle_cards

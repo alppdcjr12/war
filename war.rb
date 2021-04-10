@@ -89,6 +89,7 @@ class War
 
                     # divide up the winnings in the case of a tie and
                     if is_final_tie?(winners)
+                        p "There was a tie even after the final cards were played."
                         won_cards = []
                         @players.each do |player|
                             if !winners.include?(player)
