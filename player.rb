@@ -11,13 +11,14 @@ class Player
         @pow_cards = []
     end
 
+
     def display_player_info
         if @up_card != nil
-            up_card_display = @up_card.display_value
+            up_card_display = @up_card.display_value + @up_card.display_suit
         else
             up_card_display = "none"
         end
-        puts "Player #{@id} now has #{@down_cards.length} down cards, #{@up_card_display} in play, #{@winnings.length} in winnings, and #{@pow_cards.length} cards in pow."
+        "Player #{@id}: down: #{@down_cards.length}, up: #{up_card_display}, winnings: #{@winnings.length}, pow: #{@pow_cards.length}."
     end
 
     def play_card
@@ -51,10 +52,16 @@ class Player
     def give_up_cards
         card = @up_card
         cards = @pow_cards
-        cards << card
+        cards << card if card != nil
         @up_card = nil
         @pow_cards = []
         cards
+    end
+
+    def total_card_count
+        count = @down_cards.length + @pow_cards.length + @winnings.length
+        count += 1 if @up_card != nil
+        count
     end
 
     def win_battle(cards)
@@ -73,30 +80,22 @@ class Player
     end
 
     def battle_cards
-        has_reset = false
-        @pow_cards << @up_card
-        2.times do 
-            if @down_cards.length > 0
-                @pow_cards << @down_cards.pop
-            else
-                if !has_reset
-                    self.reset_down_cards
-                    has_reset = true
-                end
-                @pow_cards << @down_cards.pop if @down_cards.length > 0
-            end
-        end
-        if @down_cards.length > 0
-            @up_card = @down_cards.pop
+        next_cards = []
+        if @down_cards.length <= 3
+            next_cards = @down_cards
+            @down_cards = []
+            reset_down_cards
         else
-            if !has_reset
-                self.reset_down_cards
-                has_reset = true
-            end
-            if @pow_cards.length > 0
-                @up_card = @pow_cards.pop
-            end
+            next_cards = @down_cards.pop(3)
         end
+
+        until next_cards.length == 3 || @down_cards.length == 0
+            next_cards << @down_cards.pop
+        end
+
+        @pow_cards << @up_card
+        @pow_cards += next_cards
+        @up_card = @pow_cards.pop
     end
 
     def can_battle?

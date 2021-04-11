@@ -5,6 +5,8 @@ require "byebug"
 
 class War
 
+    attr_accessor :players
+
     def initialize(num_players)
         @deck = Deck.new
         @players = []
@@ -12,6 +14,10 @@ class War
             @players << Player.new(id.to_s)
         end
         deal
+    end
+
+    def total_cards_in_game
+        @players.map{ |p| p.total_card_count }.inject { |n, sum| n + sum }
     end
 
     def deal
@@ -37,159 +43,100 @@ class War
             false
         end
     end
+    
+    def current_highest(players)
+        players.select { |p| p.up_card.point_value == players.max_by { |pl| pl.up_card.point_value }.up_card.point_value }
+    end
+    
+    def current_not_highest(players)
+        players.select { |p| p.up_card.point_value != players.max_by { |pl| pl.up_card.point_value }.up_card.point_value }
+    end
+
+    def do_battle(players)
+        max = players.max_by { |player| player.up_card.point_value }
+        winners = @players.select { |player| player.up_card.point_value == max.up_card.point_value }
+        winners
+    end
+
+    def split_winnings(winners, cards)
+        while cards.length > 0
+            winners.each do |w|
+                next_card = cards.pop
+                w.win_battle([next_card]) if next_card != nil
+            end
+        end
+    end
+
+    def get_winnings(winners)
+        won_cards = []
+        @players.each do |player|
+            if !winners.include?(player)
+                won_cards += player.give_up_cards
+            end
+        end
+        won_cards
+    end
 
     def play
-        while true
-
-            winning_players = @players.select { |p| p if !p.lost? }
-            @players = winning_players
-
-            #####
-            players_string = @players.map{ |p| p.id.to_s }.join(", ")
-            puts "Players left in game: #{players_string}"
-            #####
-
+        while @players.length > 1
             @players.each do |player|
                 player.reset_down_cards if player.down_cards.empty?
                 player.play_card
             end
-            #####
-            if @players.length == 1
-                break
-            elsif @players.length == 0
-                @players.each do |p|
-                    p.tie_battle
-                end
-                next
-            end
 
-            # PRINT
-            max = @players.max_by { |player| player.up_card.point_value }
-            
-            #####
-            @players.each do |p|
-                if p.up_card != nil
-                    puts "Player #{p.id} played #{p.up_card.point_value}."
-                end
-            end
-            #####
-
-            #####
-            puts "The highest point value is #{max.up_card.point_value}."
-            #####
-
-            winners = @players.select { |player| player.up_card.point_value == max.up_card.point_value }
-
-            #####
-            winners_string = winners.map { |w| "#{w.id.to_s}" }.join(", ")
-            puts "Winner IDs with that max value: #{winners_string}"
-            #####
+            winners = do_battle(@players)
 
             if winners.length == 1
-                p "There was only one winner."
-                won_cards = []
-                @players.each do |player|
-                    if !winners.include?(player)
-                        player.give_up_cards.each do |card|
-                            won_cards << card
-                        end
-                    end
-                end
+                won_cards = get_winnings(winners)
                 winners[0].win_battle(won_cards)
             else
-                p "There was more than one winner."
-                won_cards = []
+                staked_cards = get_winnings(winners)
                 while winners.length > 1
-                    losers = []
-                    if !winners.all? { |w| !w.can_battle? }
-                        winners.each do |player|
-                            if !player.can_battle?
-                                losers << player
-                            else
-                                player.battle_cards
-                            end
-                        end
-                    end
-
-                    winners.keep_if { |winner| !losers.include?(winner) }
-
-                    #####
                     winners.each do |w|
-                        puts "Player #{w.id} played #{w.up_card.display_value} in the war."
+                        p w.display_player_info
+                        p w.pow_cards
                     end
-                    #####
+                    p "currently at stake: #{staked_cards.length}"
+                    puts "-----------"
+                    tied_winners = []
+                    game_losers = []
 
-                    max = winners.max_by { |player| player.up_card.point_value }
-
-                    winners = winners.select { |player| player.up_card.point_value == max.up_card.point_value }
+                    can_battle = winners.select { |p| p.can_battle? }
+                    cannot_battle = winners.select { |p| !p.can_battle? }
                     
-                    winners_string = winners.map{ |w| w.id.to_s }.join(", ")
-                    #####
-                    puts "Winner IDs after this war: #{winners_string}."
-                    #####
-                    
-                    # divide up the winnings in the case of a tie
-                    if winners.length > 1 && is_final_tie?(winners)
-                        puts "Final tie - winners have no more cards left with which to battle."
-                        @players.each do |player|
-                            if !winners.include?(player)
-                                player.give_up_cards.each do |card|
-                                    won_cards << card
-                                end
-                            else
-                                player.tie_battle
-                            end
-                            #####
-                            player.
-                            #####
-                        end
-                        won_cards.shuffle
-                        if won_cards.length > 0
-                            winners.shuffle.each do |w|
-                                w.win_battle([won_cards.pop]) if won_cards.pop != nil
-                            end
-                        end
+                    if can_battle.empty?
+                        tied_winners += winners
                         winners = []
-                        break
-                    elsif tie_at_end_of_round?(winners) && winners.length > 1
-                        #####
-                        puts "The highest value of these cards is #{max.up_card.point_value}."
-                        #####
-                        p "Tie with more cards remaining"
-                        winners.each do |w|
-                            w.reset_down_cards
-                            w.display_player_info
+                        staked_cards += get_winnings(tied_winners)
+                    else
+                        can_battle.each do |p|
+                            p.battle_cards
                         end
-                    elsif winners.length == 1
-                        #####
-                        puts "The highest value of these cards is #{max.up_card.point_value}."
-                        #####
-                        puts "There is a single winner of the round."
-                        @players.each do |player|
-                            if !winners.include?(player)
-                                player.give_up_cards.each do |card|
-                                    won_cards << card
-                                end
-                            end
-                        end
-                        winners[0].win_battle(won_cards)
-                        @players.each do |player|
-                            #####
-                            player.display_player_info
-                            #####
-                        end
+                        winners = current_highest(can_battle)
+                        game_losers = current_not_highest(can_battle).select { |l| !l.can_battle? } + cannot_battle
+                        staked_cards += get_winnings(winners)
                     end
+                    @players = @players.select { |p| !game_losers.include?(p) }
+                end
+                if winners.length == 0
+                    tied_winners.each do |w|
+                        w.tie_battle
+                    end
+                    tied_winners.shuffle
+                    split_winnings(tied_winners, staked_cards)
+                else
+                    winners.shuffle
+                    split_winnings(winners, staked_cards)
                 end
             end
-
+            winning_players = @players.select { |p| p if !p.lost? }
+            @players = winning_players
         end
         winner = @players[0]
-        all_cards = winner.down_cards.length + winner.pow_cards.length + winner.winnings.length
-        all_cards += 1 if winner.up_card != nil
-        puts "Player #{@players[0].id} wins with #{all_cards}!"
+        puts "Player #{winner.id} wins with #{winner.total_card_count}!"
     end
 
 end
 
-war = War.new(34)
-war.play
+g = War.new(48)
+g.play

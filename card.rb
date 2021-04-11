@@ -22,5 +22,17 @@ class Card
         end
     end
 
+    def display_suit
+        if @suit == "diamonds"
+            "D"
+        elsif @suit == "hearts"
+            "H"
+        elsif @suit == "spades"
+            "S"
+        elsif @suit == "clubs"
+            "C"
+        end
+    end
+
 
 end
