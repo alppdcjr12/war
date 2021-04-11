@@ -104,11 +104,10 @@ class War
                 while winners.length > 1
                     winners.each do |w|
                         p w.display_player_info
-                        p w.pow_cards
                     end
-                    p "currently at stake: #{staked_cards.length}"
-                    puts "-----------"
+
                     tied_winners = []
+                    losers = []
 
                     can_battle = winners.select { |p| p.can_battle? }
                     cannot_battle = winners.select { |p| !p.can_battle? }
@@ -122,8 +121,10 @@ class War
                             p.battle_cards
                         end
                         winners = current_highest(can_battle)
+                        losers = current_not_highest(can_battle).select { |p| !p.can_battle? } + cannot_battle
                         staked_cards += get_winnings(winners)
                     end
+                    @players = @players.select { |p| p if !losers.include?(p) }
                 end
                 allocate_winnings(winners, tied_winners, staked_cards)
             end
