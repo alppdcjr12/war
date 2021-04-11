@@ -59,6 +59,7 @@ class War
     end
 
     def split_winnings(winners, cards)
+        winners.shuffle
         while cards.length > 0
             winners.each do |w|
                 next_card = cards.pop
@@ -77,15 +78,24 @@ class War
         won_cards
     end
 
+    def allocate_winnings(winners, tied_winners, staked_cards)
+        if winners.length == 0
+            tied_winners.each do |w|
+                w.tie_battle
+            end
+            split_winnings(tied_winners, staked_cards)
+        else
+            split_winnings(winners, staked_cards)
+        end
+    end
+
     def play
         while @players.length > 1
             @players.each do |player|
                 player.reset_down_cards if player.down_cards.empty?
                 player.play_card
             end
-
             winners = do_battle(@players)
-
             if winners.length == 1
                 won_cards = get_winnings(winners)
                 winners[0].win_battle(won_cards)
@@ -99,7 +109,6 @@ class War
                     p "currently at stake: #{staked_cards.length}"
                     puts "-----------"
                     tied_winners = []
-                    game_losers = []
 
                     can_battle = winners.select { |p| p.can_battle? }
                     cannot_battle = winners.select { |p| !p.can_battle? }
@@ -113,24 +122,12 @@ class War
                             p.battle_cards
                         end
                         winners = current_highest(can_battle)
-                        game_losers = current_not_highest(can_battle).select { |l| !l.can_battle? } + cannot_battle
                         staked_cards += get_winnings(winners)
                     end
-                    @players = @players.select { |p| !game_losers.include?(p) }
                 end
-                if winners.length == 0
-                    tied_winners.each do |w|
-                        w.tie_battle
-                    end
-                    tied_winners.shuffle
-                    split_winnings(tied_winners, staked_cards)
-                else
-                    winners.shuffle
-                    split_winnings(winners, staked_cards)
-                end
+                allocate_winnings(winners, tied_winners, staked_cards)
             end
-            winning_players = @players.select { |p| p if !p.lost? }
-            @players = winning_players
+            @players = @players.select { |p| p if !p.lost? }
         end
         winner = @players[0]
         puts "Player #{winner.id} wins with #{winner.total_card_count}!"
@@ -138,5 +135,5 @@ class War
 
 end
 
-g = War.new(48)
+g = War.new(34)
 g.play
